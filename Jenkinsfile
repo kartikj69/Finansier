@@ -1,20 +1,18 @@
 pipeline {
     agent any
     stages {
-        stage('Docker-compose') {
+        stage('Docker Compose') {
             steps {
-                sh '''
-                    sudo apt update && sudo apt install docker-compose -y
-                '''
-            }
-        }
-        stage('Docker') {
-            steps {
-                sh '''
-                    docker-compose down
-                    docker-compose build --no-cache
-                    docker-compose up -d
-                '''
+                script {
+                    docker.image('docker/compose:1.29.2').inside('--privileged') {
+                        sh '''
+                            docker-compose version
+                            docker-compose down
+                            docker-compose build --no-cache
+                            docker-compose up -d
+                        '''
+                    }
+                }
             }
         }
     }
