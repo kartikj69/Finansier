@@ -33,6 +33,14 @@ function convertCurrencyToNumber(currencyString) {
 // Function to process KPI data
 function processKPIData(kpiData) {
   try {
+    // Process expensesByCategory if it exists
+    let processedExpensesByCategory = {};
+    if (kpiData.expensesByCategory && typeof kpiData.expensesByCategory === 'object') {
+      for (const [key, value] of Object.entries(kpiData.expensesByCategory)) {
+        processedExpensesByCategory[key] = convertCurrencyToNumber(value);
+      }
+    }
+
     return {
       ...kpiData,
       totalProfit: convertCurrencyToNumber(kpiData.totalProfit),
@@ -50,7 +58,7 @@ function processKPIData(kpiData) {
         revenue: convertCurrencyToNumber(day.revenue),
         expenses: convertCurrencyToNumber(day.expenses),
       })),
-      expensesByCategory: kpiData.expensesByCategory || {}
+      expensesByCategory: processedExpensesByCategory
     };
   } catch (error) {
     console.error("❌ Error processing KPI data:", error);
