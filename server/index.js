@@ -60,6 +60,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`📥 Request: ${req.method} ${req.path}`);
+  console.log(`   Headers:`, {
+    'user-agent': req.headers['user-agent'],
+    'referer': req.headers['referer'],
+    'accept': req.headers['accept']
+  });
+  next();
+});
+
 // Serve static files from the React app with proper caching
 app.use(express.static(clientDistPath, {
   maxAge: '1y',
@@ -71,6 +82,8 @@ app.use(express.static(clientDistPath, {
       res.setHeader('Content-Type', 'application/javascript');
     } else if (path.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
+    } else if (path.endsWith('.svg')) {
+      res.setHeader('Content-Type', 'image/svg+xml');
     }
     
     // Disable security headers for static assets to avoid conflicts
@@ -79,9 +92,21 @@ app.use(express.static(clientDistPath, {
   }
 }));
 
+// Explicitly handle asset requests
+app.get('/assets/*', (req, res) => {
+  console.log(`🎨 Asset request: ${req.path}`);
+  const assetPath = path.join(clientDistPath, req.path);
+  if (fs.existsSync(assetPath)) {
+    res.sendFile(assetPath);
+  } else {
+    console.log(`❌ Asset not found: ${assetPath}`);
+    res.status(404).send('Asset not found');
+  }
+});
+
 // Handle React routing, return all requests to React app
 app.get("*", (req, res) => {
-  console.log("Serving request for:", req.path);
+  console.log("🎯 Serving React app for:", req.path);
   const indexPath = path.join(clientDistPath, "index.html");
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);

@@ -16,8 +16,6 @@ export default defineConfig({
         entryFileNames: 'assets/[name]-[hash].js',
       },
     },
-    // Ensure all assets use relative paths
-    assetsInlineLimit: 0,
   },
   resolve: {
     alias: [{ find: "@", replacement: path.resolve(__dirname, "src") }],
