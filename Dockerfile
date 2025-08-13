@@ -13,8 +13,13 @@ RUN npm ci
 # Copy client source code
 COPY client/ ./
 
-# Build the client
-RUN npm run build
+# Build the client with verbose output
+RUN echo "🔨 Building React client..." && \
+    npm run build && \
+    echo "✅ React client built successfully!" && \
+    ls -la dist/ && \
+    echo "📁 Contents of dist/assets:" && \
+    ls -la dist/assets/ || echo "No assets directory found"
 
 # Stage 2: Build the Node.js server
 FROM node:18-alpine AS server-builder

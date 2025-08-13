@@ -48,8 +48,24 @@ if (fs.existsSync(clientDistPath)) {
   console.log("❌ Client dist directory not found!");
 }
 
-// Serve static files from the React app
-app.use(express.static(clientDistPath));
+// Serve static files from the React app with proper caching
+app.use(express.static(clientDistPath, {
+  maxAge: '1y',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    // Set proper content types
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+    
+    // Disable security headers for static assets to avoid conflicts
+    res.removeHeader('Cross-Origin-Opener-Policy');
+    res.removeHeader('Origin-Agent-Cluster');
+  }
+}));
 
 // Handle React routing, return all requests to React app
 app.get("*", (req, res) => {
