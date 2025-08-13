@@ -17,6 +17,12 @@ services:
       - ./server/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
       - finansier-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # Finansier Application
   app:
