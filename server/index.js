@@ -48,6 +48,18 @@ if (fs.existsSync(clientDistPath)) {
   console.log("❌ Client dist directory not found!");
 }
 
+// Middleware to handle HTTPS asset requests
+app.use((req, res, next) => {
+  // If the request is for assets and has an HTTPS referer, redirect to HTTP
+  if (req.headers.referer && req.headers.referer.startsWith('https://') && 
+      (req.path.startsWith('/assets/') || req.path.endsWith('.js') || req.path.endsWith('.css'))) {
+    const httpUrl = req.headers.referer.replace('https://', 'http://');
+    console.log(`🔄 Redirecting HTTPS asset request to HTTP: ${req.path}`);
+    return res.redirect(httpUrl);
+  }
+  next();
+});
+
 // Serve static files from the React app with proper caching
 app.use(express.static(clientDistPath, {
   maxAge: '1y',
