@@ -21,8 +21,7 @@ This document explains how to run the Finansier application using Docker and Doc
    ```
 
 3. **Access the application:**
-   - Frontend: http://localhost:80
-   - Backend API: http://localhost:9000
+   - Frontend & Backend: http://localhost:9000
    - MongoDB: localhost:27017
 
 ## Docker Architecture
@@ -40,6 +39,7 @@ The application uses a multi-stage Docker build with the following components:
 ### 3. Production Runtime Stage
 - Combines built client and server
 - Runs the application with security best practices
+- Serves React app directly from Node.js server
 
 ## Services
 
@@ -55,11 +55,7 @@ The application uses a multi-stage Docker build with the following components:
 - **Environment:** Production
 - **Health Check:** Enabled
 - **Dependencies:** MongoDB
-
-### Nginx Service (Optional)
-- **Ports:** 80 (HTTP), 443 (HTTPS)
-- **Features:** Reverse proxy, static file serving, caching
-- **Security:** Rate limiting, security headers
+- **Features:** Serves both API and React frontend
 
 ## Environment Variables
 
@@ -148,18 +144,16 @@ docker-compose up -d --scale app=3
 - **Non-root user:** Application runs as non-root user (nodejs)
 - **Signal handling:** Proper signal handling with dumb-init
 - **Health checks:** Built-in health monitoring
-- **Security headers:** Nginx provides security headers
-- **Rate limiting:** API rate limiting to prevent abuse
+- **Security headers:** Express.js provides security headers via Helmet
 
 ## Monitoring and Logs
 
 ### Health Checks
-- Application: `/health` endpoint
+- Application: `/kpi` endpoint
 - Docker: Built-in health checks for all services
 
 ### Logs Location
 - Application logs: `./logs/` directory
-- Nginx logs: Container logs
 - MongoDB logs: Container logs
 
 ## Troubleshooting
@@ -169,7 +163,6 @@ docker-compose up -d --scale app=3
 1. **Port conflicts:**
    ```bash
    # Check what's using the ports
-   netstat -tulpn | grep :80
    netstat -tulpn | grep :9000
    netstat -tulpn | grep :27017
    ```
@@ -231,9 +224,6 @@ docker exec finansier-mongodb mongorestore /backup
 ```bash
 # Scale the application service
 docker-compose up -d --scale app=3
-
-# Scale with load balancer
-docker-compose up -d --scale app=3 nginx
 ```
 
 ### Resource Limits
@@ -251,6 +241,18 @@ services:
           cpus: '0.5'
           memory: 512M
 ```
+
+## Recent Changes
+
+### Dependency Resolution
+- Removed `mongoose-currency` dependency that was incompatible with Mongoose 7.x
+- Implemented custom currency type handling directly in models
+- Updated Dockerfile to remove legacy peer deps flags
+
+### Simplified Architecture
+- Removed complex nginx reverse proxy setup
+- React app now served directly from Node.js server
+- Single port (9000) serves both API and frontend
 
 ## Contributing
 

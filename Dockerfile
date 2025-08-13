@@ -8,7 +8,7 @@ WORKDIR /app/client
 COPY client/package*.json ./
 
 # Install client dependencies
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy client source code
 COPY client/ ./
@@ -25,7 +25,7 @@ WORKDIR /app/server
 COPY server/package*.json ./
 
 # Install server dependencies
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy server source code
 COPY server/ ./

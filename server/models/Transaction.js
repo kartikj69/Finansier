@@ -1,8 +1,14 @@
 import mongoose from "mongoose";
-import { loadType } from "mongoose-currency";
 
 const Schema = mongoose.Schema;
-loadType(mongoose);
+
+// Custom currency type that stores values in cents and converts to dollars
+const currencySchema = {
+  type: Number,
+  get: (v) => v / 100,
+  set: (v) => Math.round(v * 100),
+  default: 0
+};
 
 const TransactionSchema = new Schema(
   {
@@ -10,11 +16,7 @@ const TransactionSchema = new Schema(
       type: String,
       required: true,
     },
-    amount: {
-      type: mongoose.Types.Currency,
-      currency: "USD",
-      get: (v) => v / 100,
-    },
+    amount: currencySchema,
     productIds: [
       {
         type: mongoose.Schema.Types.ObjectId,
