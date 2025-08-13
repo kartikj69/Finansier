@@ -1,0 +1,270 @@
+# Docker Setup for Finansier
+
+This document explains how to run the Finansier application using Docker and Docker Compose.
+
+## Prerequisites
+
+- Docker (version 20.10 or higher)
+- Docker Compose (version 2.0 or higher)
+
+## Quick Start
+
+1. **Clone the repository and navigate to the project directory:**
+   ```bash
+   git clone <repository-url>
+   cd Finansier
+   ```
+
+2. **Build and run the application:**
+   ```bash
+   docker-compose up --build
+   ```
+
+3. **Access the application:**
+   - Frontend: http://localhost:80
+   - Backend API: http://localhost:9000
+   - MongoDB: localhost:27017
+
+## Docker Architecture
+
+The application uses a multi-stage Docker build with the following components:
+
+### 1. Client Builder Stage
+- Builds the React frontend using Vite
+- Creates optimized production build
+
+### 2. Server Builder Stage
+- Prepares the Node.js backend
+- Installs production dependencies
+
+### 3. Production Runtime Stage
+- Combines built client and server
+- Runs the application with security best practices
+
+## Services
+
+### MongoDB Service
+- **Image:** `mongo:6.0`
+- **Port:** 27017
+- **Database:** finansier
+- **Credentials:** admin/password123
+- **Persistent Storage:** Yes (mongodb_data volume)
+
+### Application Service
+- **Port:** 9000
+- **Environment:** Production
+- **Health Check:** Enabled
+- **Dependencies:** MongoDB
+
+### Nginx Service (Optional)
+- **Ports:** 80 (HTTP), 443 (HTTPS)
+- **Features:** Reverse proxy, static file serving, caching
+- **Security:** Rate limiting, security headers
+
+## Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# MongoDB Configuration
+MONGO_URL=mongodb://admin:password123@mongodb:27017/finansier?authSource=admin
+
+# Application Configuration
+NODE_ENV=production
+PORT=9000
+
+# Optional: Custom MongoDB credentials
+MONGO_INITDB_ROOT_USERNAME=admin
+MONGO_INITDB_ROOT_PASSWORD=password123
+MONGO_INITDB_DATABASE=finansier
+```
+
+## Docker Commands
+
+### Build the application
+```bash
+docker-compose build
+```
+
+### Start all services
+```bash
+docker-compose up -d
+```
+
+### View logs
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f app
+docker-compose logs -f mongodb
+```
+
+### Stop all services
+```bash
+docker-compose down
+```
+
+### Stop and remove volumes
+```bash
+docker-compose down -v
+```
+
+### Rebuild and restart
+```bash
+docker-compose up --build -d
+```
+
+## Development vs Production
+
+### Development
+For development, you can run individual services:
+
+```bash
+# Start only MongoDB
+docker-compose up mongodb
+
+# Run client locally
+cd client && npm run dev
+
+# Run server locally
+cd server && npm run dev
+```
+
+### Production
+For production deployment:
+
+```bash
+# Build and start all services
+docker-compose -f docker-compose.yml up --build -d
+
+# Scale the application if needed
+docker-compose up -d --scale app=3
+```
+
+## Security Features
+
+- **Non-root user:** Application runs as non-root user (nodejs)
+- **Signal handling:** Proper signal handling with dumb-init
+- **Health checks:** Built-in health monitoring
+- **Security headers:** Nginx provides security headers
+- **Rate limiting:** API rate limiting to prevent abuse
+
+## Monitoring and Logs
+
+### Health Checks
+- Application: `/health` endpoint
+- Docker: Built-in health checks for all services
+
+### Logs Location
+- Application logs: `./logs/` directory
+- Nginx logs: Container logs
+- MongoDB logs: Container logs
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port conflicts:**
+   ```bash
+   # Check what's using the ports
+   netstat -tulpn | grep :80
+   netstat -tulpn | grep :9000
+   netstat -tulpn | grep :27017
+   ```
+
+2. **MongoDB connection issues:**
+   ```bash
+   # Check MongoDB container status
+   docker-compose ps mongodb
+   
+   # Check MongoDB logs
+   docker-compose logs mongodb
+   ```
+
+3. **Build failures:**
+   ```bash
+   # Clean build cache
+   docker-compose build --no-cache
+   
+   # Remove all containers and images
+   docker-compose down --rmi all
+   ```
+
+### Performance Optimization
+
+1. **Enable Docker BuildKit:**
+   ```bash
+   export DOCKER_BUILDKIT=1
+   docker-compose build
+   ```
+
+2. **Use multi-platform builds:**
+   ```bash
+   docker buildx build --platform linux/amd64,linux/arm64 .
+   ```
+
+## Backup and Restore
+
+### MongoDB Backup
+```bash
+# Create backup
+docker exec finansier-mongodb mongodump --out /backup
+
+# Copy backup from container
+docker cp finansier-mongodb:/backup ./backup
+```
+
+### MongoDB Restore
+```bash
+# Copy backup to container
+docker cp ./backup finansier-mongodb:/backup
+
+# Restore database
+docker exec finansier-mongodb mongorestore /backup
+```
+
+## Scaling
+
+### Horizontal Scaling
+```bash
+# Scale the application service
+docker-compose up -d --scale app=3
+
+# Scale with load balancer
+docker-compose up -d --scale app=3 nginx
+```
+
+### Resource Limits
+Add resource limits in `docker-compose.yml`:
+
+```yaml
+services:
+  app:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+```
+
+## Contributing
+
+When contributing to the Docker setup:
+
+1. Test changes locally
+2. Update documentation
+3. Ensure security best practices
+4. Test with different environments
+
+## Support
+
+For Docker-related issues:
+1. Check the troubleshooting section
+2. Review Docker and Docker Compose logs
+3. Ensure all prerequisites are met
+4. Check for port conflicts
