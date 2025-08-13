@@ -65,10 +65,6 @@ USER nodejs
 # Expose server port
 EXPOSE 9000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:9000/kpi', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
-
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 

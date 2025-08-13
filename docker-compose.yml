@@ -17,12 +17,6 @@ services:
       - ./server/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
       - finansier-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
   # Finansier Application
   app:
@@ -38,18 +32,11 @@ services:
       PORT: 9000
       MONGO_URL: mongodb://admin:password123@mongodb:27017/finansier?authSource=admin
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     volumes:
       - ./logs:/app/logs
     networks:
       - finansier-network
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9000/kpi', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
 volumes:
   mongodb_data:
