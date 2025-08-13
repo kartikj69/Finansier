@@ -1,23 +1,6 @@
 version: '3.8'
 
 services:
-  # MongoDB Database
-  mongodb:
-    image: mongo:6.0
-    container_name: finansier-mongodb
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password123
-      MONGO_INITDB_DATABASE: finansier
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-      - ./server/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-    networks:
-      - finansier-network
-
   # Finansier Application
   app:
     build:
@@ -30,18 +13,6 @@ services:
     environment:
       NODE_ENV: production
       PORT: 9000
-      MONGO_URL: mongodb://admin:password123@mongodb:27017/finansier?authSource=admin
-    depends_on:
-      - mongodb
+      MONGO_URL: ${MONGO_URL}
     volumes:
       - ./logs:/app/logs
-    networks:
-      - finansier-network
-
-volumes:
-  mongodb_data:
-    driver: local
-
-networks:
-  finansier-network:
-    driver: bridge

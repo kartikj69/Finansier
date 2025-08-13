@@ -35,16 +35,36 @@ app.use("/transaction", transactionRoutes);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const clientDistPath = path.join(__dirname, "../client/dist");
+console.log("Client dist path:", clientDistPath);
+
+// Check if the client dist directory exists
+import fs from "fs";
+if (fs.existsSync(clientDistPath)) {
+  console.log("✅ Client dist directory found");
+  const files = fs.readdirSync(clientDistPath);
+  console.log("Files in client/dist:", files);
+} else {
+  console.log("❌ Client dist directory not found!");
+}
+
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, "../client/dist")));
+app.use(express.static(clientDistPath));
 
 // Handle React routing, return all requests to React app
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/dist", "index.html"));
+  console.log("Serving request for:", req.path);
+  const indexPath = path.join(clientDistPath, "index.html");
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send("React app not found. Please ensure the client was built successfully.");
+  }
 });
 
 /* MONGOOSE SETUP */
 const PORT = process.env.PORT || 9000;
+console.log("Connecting to MongoDB with URL:", process.env.MONGO_URL);
 mongoose
   .connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
@@ -54,9 +74,23 @@ mongoose
     app.listen(PORT, () => console.log(`Server Port: ${PORT}`));
 
     /* ADD DATA ONE TIME ONLY OR AS NEEDED */
-      //await mongoose.connection.db.dropDatabase();
-      //KPI.insertMany(kpis);
-      //Product.insertMany(products);
-      //Transaction.insertMany(transactions);
+    try {
+      // Check if data already exists
+      const kpiCount = await KPI.countDocuments();
+      const productCount = await Product.countDocuments();
+      const transactionCount = await Transaction.countDocuments();
+      
+      if (kpiCount === 0 && productCount === 0 && transactionCount === 0) {
+        console.log("No data found, inserting sample data...");
+        await KPI.insertMany(kpis);
+        await Product.insertMany(products);
+        await Transaction.insertMany(transactions);
+        console.log("Sample data inserted successfully!");
+      } else {
+        console.log("Data already exists, skipping insertion.");
+      }
+    } catch (error) {
+      console.log("Error inserting data:", error);
+    }
   })
   .catch((error) => console.log(`${error} did not connect`));
