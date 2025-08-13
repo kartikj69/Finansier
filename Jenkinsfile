@@ -4,7 +4,7 @@ pipeline {
         stage('Docker Compose') {
             steps {
                 script {
-                    docker.image('docker/compose:1.29.2').inside('--privileged') {
+                    docker.image('docker/compose:1.29.2').inside('--privileged --user=root') {
                         sh '''
                             docker-compose version
                             docker-compose down
