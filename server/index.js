@@ -19,7 +19,14 @@ import { kpis, products, transactions } from "./data/data.js";
 dotenv.config();
 const app = express();
 app.use(express.json());
-app.use(helmet());
+// Disable HSTS and related headers that can cause HTTPS auto-upgrade on non-HTTPS origins
+app.use(
+  helmet({
+    hsts: false,
+    crossOriginOpenerPolicy: false,
+    originAgentCluster: false,
+  })
+);
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("common"));
 app.use(bodyParser.json());
@@ -51,9 +58,15 @@ if (fs.existsSync(clientDistPath)) {
 // Middleware to handle HTTPS asset requests
 app.use((req, res, next) => {
   // If the request is for assets and has an HTTPS referer, redirect to HTTP
-  if (req.headers.referer && req.headers.referer.startsWith('https://') && 
-      (req.path.startsWith('/assets/') || req.path.endsWith('.js') || req.path.endsWith('.css'))) {
-    const httpUrl = req.headers.referer.replace('https://', 'http://');
+  if (
+    req.headers.referer &&
+    req.headers.referer.startsWith("https://") &&
+    (req.path.startsWith("/assets/") ||
+      req.path.endsWith(".js") ||
+      req.path.endsWith(".css") ||
+      req.path.endsWith(".svg"))
+  ) {
+    const httpUrl = req.headers.referer.replace("https://", "http://");
     console.log(`🔄 Redirecting HTTPS asset request to HTTP: ${req.path}`);
     return res.redirect(httpUrl);
   }
@@ -64,43 +77,46 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   console.log(`📥 Request: ${req.method} ${req.path}`);
   console.log(`   Headers:`, {
-    'user-agent': req.headers['user-agent'],
-    'referer': req.headers['referer'],
-    'accept': req.headers['accept']
+    "user-agent": req.headers["user-agent"],
+    referer: req.headers["referer"],
+    accept: req.headers["accept"],
   });
   next();
 });
 
 // Serve static files from the React app with proper caching
-app.use(express.static(clientDistPath, {
-  maxAge: '1y',
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, path) => {
-    // Set proper content types
-    if (path.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    } else if (path.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css');
-    } else if (path.endsWith('.svg')) {
-      res.setHeader('Content-Type', 'image/svg+xml');
-    }
-    
-    // Disable security headers for static assets to avoid conflicts
-    res.removeHeader('Cross-Origin-Opener-Policy');
-    res.removeHeader('Origin-Agent-Cluster');
-  }
-}));
+app.use(
+  express.static(clientDistPath, {
+    maxAge: "1y",
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, path) => {
+      // Set proper content types
+      if (path.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
+      } else if (path.endsWith(".css")) {
+        res.setHeader("Content-Type", "text/css");
+      } else if (path.endsWith(".svg")) {
+        res.setHeader("Content-Type", "image/svg+xml");
+      }
+
+      // Ensure these headers are not set for static assets
+      res.removeHeader("Cross-Origin-Opener-Policy");
+      res.removeHeader("Origin-Agent-Cluster");
+      res.removeHeader("Strict-Transport-Security");
+    },
+  })
+);
 
 // Explicitly handle asset requests
-app.get('/assets/*', (req, res) => {
+app.get("/assets/*", (req, res) => {
   console.log(`🎨 Asset request: ${req.path}`);
   const assetPath = path.join(clientDistPath, req.path);
   if (fs.existsSync(assetPath)) {
     res.sendFile(assetPath);
   } else {
     console.log(`❌ Asset not found: ${assetPath}`);
-    res.status(404).send('Asset not found');
+    res.status(404).send("Asset not found");
   }
 });
 
@@ -111,7 +127,9 @@ app.get("*", (req, res) => {
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
-    res.status(404).send("React app not found. Please ensure the client was built successfully.");
+    res
+      .status(404)
+      .send("React app not found. Please ensure the client was built successfully.");
   }
 });
 
@@ -220,15 +238,15 @@ mongoose
       const kpiCount = await KPI.countDocuments();
       const productCount = await Product.countDocuments();
       const transactionCount = await Transaction.countDocuments();
-      
+
       console.log(`📊 Current document counts:`);
       console.log(`   KPIs: ${kpiCount}`);
       console.log(`   Products: ${productCount}`);
       console.log(`   Transactions: ${transactionCount}`);
-      
+
       if (kpiCount === 0 && productCount === 0 && transactionCount === 0) {
         console.log("🌱 No data found, inserting sample data...");
-        
+
         // Process and insert KPIs
         console.log("📈 Processing KPIs...");
         const processedKPIs = kpis.map(processKPIData);
